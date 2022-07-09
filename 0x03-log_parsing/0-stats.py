@@ -1,40 +1,45 @@
 #!/usr/bin/python3
-"""Performs log parsing from stdin"""
-
-import re
+"""This file reads stdin line by line and computes metrics"""
 import sys
-counter = 0
-file_size = 0
-statusC_counter = {200: 0, 301: 0, 400: 0,
-                   401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
+import re
+import signal
 
 
-def printCodes(dict, file_s):
-    """Prints the status code and the number of times they appear"""
-    print("File size: {}".format(file_s))
-    for key in sorted(dict.keys()):
-        if statusC_counter[key] != 0:
-            print("{}: {}".format(key, dict[key]))
+total_size = 0
+code_nums = {}
+line_num = 0
 
 
-if __name__ == "__main__":
-    try:
-        for line in sys.stdin:
-            split_string = re.split('- |"|"| " " ', str(line))
-            statusC_and_file_s = split_string[-1]
-            if counter != 0 and counter % 10 == 0:
-                printCodes(statusC_counter, file_size)
-            counter = counter + 1
-            try:
-                statusC = int(statusC_and_file_s.split()[0])
-                f_size = int(statusC_and_file_s.split()[1])
-                # print("Status Code {} size {}".format(statusC, f_size))
-                if statusC in statusC_counter:
-                    statusC_counter[statusC] += 1
-                file_size = file_size + f_size
-            except:
-                pass
-        printCodes(statusC_counter, file_size)
-    except KeyboardInterrupt:
-        printCodes(statusC_counter, file_size)
-        raise
+def sig_hand(sig, frame):
+    """handle sigint"""
+    print_stuff()
+
+
+def print_stuff():
+    """print file size and status code frequency"""
+    print('File size: {}'.format(total_size))
+    for i in sorted(code_nums.keys()):
+        j = code_nums.get(i)
+        print('{}: {}'.format(i, j))
+
+
+for line in sys.stdin:
+    if line == "":
+        continue
+    valid_codes = "(200|301|400|401|403|404|405|500)"
+    patt = re.compile("^.*\s+" + valid_codes + "\s+(\d+)\s*$")
+    x = patt.match(line)
+    patt = re.compile("^.*\s+(\d+)\s*$")
+    y = patt.match(line)
+    if (y):
+        size = y[1]
+        total_size = total_size + int(size)
+    if (x):
+        code = x[1]
+        code_nums[code] = code_nums.get(code, 0) + 1
+    line_num = line_num + 1
+    if line_num == 10:
+        line_num = 0
+        print_stuff()
+    signal.signal(signal.SIGINT, sig_hand)
+print_stuff()
