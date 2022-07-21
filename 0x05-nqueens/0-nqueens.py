@@ -6,61 +6,118 @@ a program that solves the N queens problem.
 import sys
 
 
-if len(sys.argv) < 2:
-    print("Usage: nqueens N")
-    sys.exit(1)
-
-try:
-    num = int(sys.argv[1])
-except ValueError:
-    print("N must be a number")
-    sys.exit(1)
-
-if num < 4:
-    print("N must be at least 4")
-    sys.exit(1)
-
-
-def solveNQueens(n):
+def print_board(board):
+    """ print_board
+    Args:
+        board - list of list with length sys.argv[1]
     """
-    Places N non-attacking queens on an NxN chessboard.
+    new_list = []
+    for i, row in enumerate(board):
+        value = []
+        for j, col in enumerate(row):
+            if col == 1:
+                value.append(i)
+                value.append(j)
+        new_list.append(value)
+
+    print(new_list)
+
+
+def isSafe(board, row, col, number):
+    """ isSafe
+    Args:
+        board - list of list with length sys.argv[1]
+        row - row to check if is safe doing a movement in this position
+        col - col to check if is safe doing a movement in this position
+        number: size of the board
+    Return: True of False
     """
-    col, pos, neg = set(), set(), set()
-    current_board = [[] for n in range(n)]
-    solved_board = []
 
-    def backtrack(row):
-        """
-        Tool for solving constraint satisfaction problems.
-        """
-        if row == n:
-            copy = current_board.copy()
-            solved_board.append(copy)
-            return
+    # Check this row in the left side
+    for i in range(col):
+        if board[row][i] == 1:
+            return False
 
-        for c in range(n):
-            if c in col or (row + c) in pos or (row - c) in neg:
-                continue
+    # Check upper diagonal on left side
+    for i, j in zip(range(row, -1, -1), range(col, -1, -1)):
+        if board[i][j] == 1:
+            return False
 
-            col.add(c)
-            pos.add(row + c)
-            neg.add(row - c)
+    for i, j in zip(range(row, number, 1), range(col, -1, -1)):
+        if board[i][j] == 1:
+            return False
 
-            current_board[row] = [row, c]
+    return True
 
-            backtrack(row + 1)
 
-            col.remove(c)
-            pos.remove(row + c)
-            neg.remove(row - c)
-            current_board[row] = []
+def solveNQUtil(board, col, number):
+    """ Auxiliar method to find the posibilities of answer
+    Args:
+        board - Board to resolve
+        col - Number of col
+        number - size of the board
+    Returns:
+        All the posibilites to solve the problem
+    """
 
-    backtrack(0)
+    if (col == number):
+        print_board(board)
+        return True
+    res = False
+    for i in range(number):
 
-    return solved_board
+        if (isSafe(board, i, col, number)):
+
+            # Place this queen in board[i][col]
+            board[i][col] = 1
+
+            # Make result true if any placement
+            # is possible
+            res = solveNQUtil(board, col + 1, number) or res
+
+            board[i][col] = 0  # BACKTRACK
+
+    return res
+
+
+def solve(number):
+    """ Find all the posibilities if exists
+    Args:
+        number - size of the board
+    """
+    board = [[0 for i in range(number)]for i in range(number)]
+
+    if not solveNQUtil(board, 0, number):
+        return False
+
+    return True
+
+
+def validate(args):
+    """ Validate the input data to verify if the size to
+        answer is posible
+    Args:
+        args - sys.argv
+    """
+    if (len(args) == 2):
+        # Validate data
+        try:
+            number = int(args[1])
+        except Exception:
+            print("N must be a number")
+            exit(1)
+        if number < 4:
+            print("N must be at least 4")
+            exit(1)
+        return number
+    else:
+        print("Usage: nqueens N")
+        exit(1)
 
 
 if __name__ == "__main__":
-    boards = solveNQueens(num)
-    for board in boards:
-        print(board)
+    """ Main method to execute the application
+    """
+
+    number = validate(sys.argv)
+    solve(number)
